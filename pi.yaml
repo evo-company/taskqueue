@@ -1,0 +1,68 @@
+- !Service
+  name: zoo
+  image: !DockerImage zookeeper:3.4.11
+
+- !Service
+  name: kafka
+  requires: [zoo]
+  image: !DockerImage wurstmeister/kafka:1.0.0
+  environ:
+    KAFKA_HOST_NAME: 0.0.0.0
+    KAFKA_ADVERTISED_HOST_NAME: kafka
+    KAFKA_ADVERTISED_PORT: 9092
+    KAFKA_ZOOKEEPER_CONNECT: zoo:2181
+
+- !Image
+  name: env
+  from: !DockerImage python:3.7.3-slim
+  repository: registry.evo.dev/service/taskqueue/env
+  tasks:
+  - run: pip3 install --disable-pip-version-check --no-cache-dir --no-deps -r {{req}}
+    req: !File server/setup.txt
+  - run: cp {{bin}} /usr/local/bin/grpc_health_probe && chmod +x /usr/local/bin/grpc_health_probe
+    bin: !Download "https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.2.2/grpc_health_probe-linux-amd64"
+
+- !Image
+  name: app
+  from: env
+  repository: registry.evo.dev/service/taskqueue/app
+  tasks:
+  - run: pip3 install --no-deps {{src}}
+    src: !Bundle "server"
+  - run: cp {{ver}} /checksum.txt
+    ver: !File "checksum.txt"
+
+- !Command
+  name: rpc
+  network-name: grpc.taskqueue.svc
+  description: Run gRPC server
+  requires: [kafka]
+  image: env
+  run: python3 -m taskqueue.server config.yaml@dev rpc --port 50051
+  environ:
+    LC_ALL: C.UTF-8
+    PYTHONPATH: protobuf:server
+
+- !Command
+  name: worker
+  description: Run Kafka consumer
+  requires: [kafka]
+  image: env
+  run: python3 -m taskqueue.server config.yaml@dev worker
+  environ:
+    PYTHONPATH: protobuf:server
+
+- !Command
+  name: example server
+  network-name: grpc.cafe.svc
+  image: env
+  run: python3 -m cafe server
+  environ:
+    PYTHONPATH: client:protobuf:example
+
+- !Command
+  name: example test
+  image: env
+  run: python3 -m cafe test
+  environ:
+    PYTHONPATH: client:protobuf:example

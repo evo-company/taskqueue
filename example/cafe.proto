@@ -1,0 +1,24 @@
+syntax = 'proto3';
+
+package coffemachine;
+
+import "google/protobuf/empty.proto";
+
+enum Size {
+    DEFAULT = 0;
+    TINY = 1;
+    SMALL = 2;
+    MIDDLE = 3;
+    LARGE = 4;
+    XLARGE = 5;
+}
+
+message LatteOrder {
+    Size size = 1;
+    uint32 temperature = 2;
+    uint32 sugar = 3;
+}
+
+service CoffeeMachine {
+    rpc MakeLatte (LatteOrder) returns (google.protobuf.Empty) {};
+}

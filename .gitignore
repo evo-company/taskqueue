@@ -1,0 +1,10 @@
+static
+build
+dist
+env
+.idea
+.venv
+.cache
+.tox
+*.pyc
+*.egg-info

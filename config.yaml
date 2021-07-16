@@ -1,0 +1,15 @@
+main.dev:
+  kafka-hosts: ['kafka:9092']
+  kafka-group: taskqueue
+
+  logging-level-app: debug
+  logging-level-libs: info
+  logging-handlers: [console]
+
+  logging-syslog-app: null
+  logging-syslog-facility: null
+  logging-syslog-mapping: null
+  logging-syslog-defaults: null
+
+compose.dev:
+  main: dev
